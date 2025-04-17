@@ -1,0 +1,1013 @@
+import { useState, useEffect } from "react";
+import "./App.css";
+
+function App() {
+  const [language, setLanguage] = useState("ar"); // "ar" للعربية، "en" للإنجليزية
+  const [currentUser, setCurrentUser] = useState(null);
+  const [activeTab, setActiveTab] = useState("feed");
+  const [showAddItemModal, setShowAddItemModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(true);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [newItem, setNewItem] = useState({ name: "", link: "", image: "", price: "" });
+  const [newUser, setNewUser] = useState({ name: "", username: "", email: "", password: "", bio: "" });
+  const [currentProfile, setCurrentProfile] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  // بيانات وهمية للمستخدمين
+  const dummyUsers = [
+    {
+      id: 1,
+      name: "سارة الأحمد",
+      username: "sara_ahmad",
+      avatar: "/api/placeholder/100/100",
+      bio: "أحب الكتب والموسيقى والسفر ✈️",
+      followers: 124,
+      following: 98,
+      wishlist: [
+        { id: 101, name: "سماعات لاسلكية", link: "#", price: "349", image: "/api/placeholder/200/200", status: "available" },
+        { id: 102, name: "كتاب رواية", link: "#", price: "85", image: "/api/placeholder/200/200", status: "reserved" }
+      ]
+    },
+    {
+      id: 2,
+      name: "محمد العتيبي",
+      username: "m_otaibi",
+      avatar: "/api/placeholder/100/100",
+      bio: "مهتم بالتقنية والألعاب الإلكترونية 🎮",
+      followers: 245,
+      following: 156,
+      wishlist: [
+        { id: 201, name: "ساعة ذكية", link: "#", price: "1200", image: "/api/placeholder/200/200", status: "available" },
+        { id: 202, name: "حقيبة لابتوب", link: "#", price: "350", image: "/api/placeholder/200/200", status: "gifted" },
+        { id: 203, name: "سماعات قيمنق", link: "#", price: "700", image: "/api/placeholder/200/200", status: "available" }
+      ]
+    },
+    {
+      id: 3,
+      name: "نورة الغامدي",
+      username: "noura_g",
+      avatar: "/api/placeholder/100/100",
+      bio: "أحب الفن والتصوير 📸 وصناعة القهوة ☕",
+      followers: 312,
+      following: 127,
+      wishlist: [
+        { id: 301, name: "طقم فناجين قهوة", link: "#", price: "280", image: "/api/placeholder/200/200", status: "available" },
+        { id: 302, name: "كاميرا فورية", link: "#", price: "450", image: "/api/placeholder/200/200", status: "available" }
+      ]
+    }
+  ];
+  
+  // تنظيم لأنشطة الآخرين (للصفحة الرئيسية)
+  const dummyActivities = [
+    { 
+      id: 1, 
+      type: "add_item", 
+      user: dummyUsers[0], 
+      item: dummyUsers[0].wishlist[0], 
+      timestamp: "2024-04-15T18:43:00" 
+    },
+    { 
+      id: 2, 
+      type: "follow", 
+      user: dummyUsers[1], 
+      targetUser: dummyUsers[0], 
+      timestamp: "2024-04-15T17:22:00" 
+    },
+    { 
+      id: 3, 
+      type: "create_list", 
+      user: dummyUsers[2], 
+      listName: "أمنيات عيد ميلادي", 
+      timestamp: "2024-04-15T15:10:00" 
+    },
+    { 
+      id: 4, 
+      type: "add_item", 
+      user: dummyUsers[1], 
+      item: dummyUsers[1].wishlist[2], 
+      timestamp: "2024-04-15T14:35:00" 
+    }
+  ];
+  
+  // التبديل بين اللغات
+  const toggleLanguage = () => {
+    setLanguage(prev => prev === "ar" ? "en" : "ar");
+  };
+
+  // تسجيل الدخول
+  const handleLogin = () => {
+    // في التطبيق الحقيقي، هنا سيتم التحقق من معلومات المستخدم
+    setCurrentUser(dummyUsers[0]);
+    setShowLoginModal(false);
+  };
+  
+  // تسجيل مستخدم جديد
+  const handleRegister = () => {
+    // في التطبيق الحقيقي، هنا سيتم إضافة المستخدم الجديد لقاعدة البيانات
+    const newUserObj = {
+      id: Date.now(),
+      ...newUser,
+      avatar: "/api/placeholder/100/100",
+      followers: 0,
+      following: 0,
+      wishlist: []
+    };
+    setCurrentUser(newUserObj);
+    setShowLoginModal(false);
+  };
+  
+  // إضافة منتج جديد لقائمة الأمنيات
+  const addToWishlist = () => {
+    if (newItem.name.trim() !== "") {
+      const updatedUser = { ...currentUser };
+      updatedUser.wishlist = [...(updatedUser.wishlist || []), { 
+        ...newItem, 
+        id: Date.now(),
+        status: "available" 
+      }];
+      setCurrentUser(updatedUser);
+      setNewItem({ name: "", link: "", image: "", price: "" });
+      setShowAddItemModal(false);
+    }
+  };
+
+  // حجز عنصر من قائمة أمنيات صديق
+  const reserveItem = (userId, itemId) => {
+    // في التطبيق الحقيقي سيتم تحديث قاعدة البيانات
+    const updatedUsers = dummyUsers.map(user => {
+      if (user.id === userId) {
+        const updatedWishlist = user.wishlist.map(item => {
+          if (item.id === itemId) {
+            return { ...item, status: "reserved" };
+          }
+          return item;
+        });
+        return { ...user, wishlist: updatedWishlist };
+      }
+      return user;
+    });
+    
+    // تحديث الواجهة فقط للعرض
+    if (currentProfile && currentProfile.id === userId) {
+      const updatedProfile = { ...currentProfile };
+      updatedProfile.wishlist = updatedProfile.wishlist.map(item => {
+        if (item.id === itemId) {
+          return { ...item, status: "reserved" };
+        }
+        return item;
+      });
+      setCurrentProfile(updatedProfile);
+    }
+  };
+  
+  // وظيفة نسخ الرابط إلى الحافظة
+  const copyToClipboard = (text) => {
+    // في محيط React الحقيقي سنستخدم navigator.clipboard
+    // هنا نستخدم طريقة بديلة للعرض
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textArea);
+  };
+  
+  // وظيفة مشاركة قائمة الأمنيات
+  const shareWishlist = (platform, customMessage = null) => {
+    // إنشاء رابط المشاركة
+    const baseUrl = "https://surpriseme.app/u/";
+    const shareUrl = selectedItem 
+      ? `${baseUrl}${currentUser.username}/item/${selectedItem.id}`
+      : `${baseUrl}${currentUser.username}`;
+      
+    const defaultText = selectedItem
+      ? t(`أتمنى الحصول على "${selectedItem.name}"! شاهد قائمة أمنياتي على تطبيق SURPRISE ME`, 
+          `I wish for "${selectedItem.name}"! Check out my wishlist on SURPRISE ME app`)
+      : t(`هذه قائمة أمنياتي! شاهد ما أتمناه على تطبيق SURPRISE ME`, 
+          `This is my wishlist! Check out what I wish for on SURPRISE ME app`);
+          
+    const shareText = customMessage || defaultText;
+    const fullShareText = `${shareText} ${shareUrl}`;
+    
+    // مشاركة عبر المنصات المختلفة
+    switch (platform) {
+      case "whatsapp":
+        window.open(`https://wa.me/?text=${encodeURIComponent(fullShareText)}`, "_blank");
+        break;
+      case "snapchat":
+        // في التطبيق الفعلي سنستخدم واجهة Snapchat API
+        copyToClipboard(shareUrl);
+        alert(t("تم نسخ الرابط للمشاركة عبر سناب شات", "Link copied for sharing via Snapchat"));
+        break;
+      case "twitter":
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(fullShareText)}`, "_blank");
+        break;
+      case "email":
+        window.open(`mailto:?subject=${encodeURIComponent(t("قائمة أمنياتي", "My Wishlist"))}&body=${encodeURIComponent(fullShareText)}`, "_blank");
+        break;
+      case "copy":
+      default:
+        copyToClipboard(shareUrl);
+        alert(t("تم نسخ الرابط بنجاح!", "Link copied successfully!"));
+        break;
+    }
+    
+    // إغلاق النافذة المنبثقة بعد المشاركة
+    setShowShareModal(false);
+    setSelectedItem(null);
+  };
+  
+  // عرض بروفايل مستخدم
+  const viewProfile = (userId) => {
+    const user = dummyUsers.find(u => u.id === userId);
+    if (user) {
+      setCurrentProfile(user);
+      setActiveTab('profile');
+    }
+  };
+  
+  // البحث عن المستخدمين
+  const searchUsers = () => {
+    if (!searchTerm.trim()) return dummyUsers;
+    
+    return dummyUsers.filter(user => 
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.username.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  };
+  
+  // الترجمة حسب اللغة المختارة
+  const t = (ar, en) => language === "ar" ? ar : en;
+
+  // اتجاه النص حسب اللغة
+  const dir = language === "ar" ? "rtl" : "ltr";
+  
+  // تنسيق التاريخ والوقت
+  const formatTimestamp = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString(language === "ar" ? "ar-SA" : "en-US", {
+      day: "numeric",
+      month: "short",
+      hour: "numeric",
+      minute: "numeric"
+    });
+  };
+  
+  // عرض حالة العنصر
+  const getStatusText = (status) => {
+    switch(status) {
+      case "available":
+        return t("متاح", "Available");
+      case "reserved":
+        return t("محجوز", "Reserved");
+      case "gifted":
+        return t("تم إهداؤه", "Gifted");
+      default:
+        return t("متاح", "Available");
+    }
+  };
+  
+  // عرض لون حالة العنصر
+  const getStatusColor = (status) => {
+    switch(status) {
+      case "available":
+        return "bg-green-100 text-green-800";
+      case "reserved":
+        return "bg-orange-100 text-orange-800";
+      case "gifted":
+        return "bg-blue-100 text-blue-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+  
+  // فتح نافذة المشاركة
+  const openShareModal = (item = null) => {
+    setSelectedItem(item);
+    setShowShareModal(true);
+  };
+  
+  // تسجيل الخروج
+  const logout = () => {
+    setCurrentUser(null);
+    setShowLoginModal(true);
+    setActiveTab("feed");
+    setCurrentProfile(null);
+  };
+  
+  return (
+    <div className={`min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4 ${dir === "rtl" ? "font-arabic" : ""}`} dir={dir}>
+      <div className="w-full max-w-2xl bg-white shadow-lg rounded-xl overflow-hidden">
+        {/* شريط الرأس */}
+        <div className="p-4 bg-white border-b sticky top-0 z-10">
+          <div className="flex justify-between items-center">
+            <div className="font-bold text-xl text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 flex items-center">
+              <span className="mr-2">✨</span>
+              {t("SURPRISE ME", "SURPRISE ME")}
+            </div>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={toggleLanguage}
+                className="px-3 py-1 bg-gray-200 rounded-md text-sm hover:bg-gray-300 transition-colors"
+              >
+                {t("English", "العربية")}
+              </button>
+              {currentUser && (
+                <button 
+                  onClick={logout}
+                  className="p-1 text-gray-500 hover:text-gray-700"
+                >
+                  <span role="img" aria-label="Logout">⎋</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {/* المحتوى الرئيسي */}
+        <div className="h-[calc(100vh-64px)] overflow-auto">
+          {currentUser ? (
+            <div>
+              {/* شريط التنقل */}
+              <div className="flex border-b sticky top-0 bg-white z-10">
+                <button
+                  className={`flex-1 py-3 px-2 text-center font-medium ${
+                    activeTab === "feed"
+                    ? "border-b-2 border-purple-600 text-purple-600"
+                    : "text-gray-500"
+                  }`}
+                  onClick={() => {
+                    setActiveTab("feed");
+                    setCurrentProfile(null);
+                  }}
+                >
+                  {t("الرئيسية", "Feed")}
+                </button>
+                <button
+                  className={`flex-1 py-3 px-2 text-center font-medium ${
+                    activeTab === "explore"
+                    ? "border-b-2 border-purple-600 text-purple-600"
+                    : "text-gray-500"
+                  }`}
+                  onClick={() => {
+                    setActiveTab("explore");
+                    setCurrentProfile(null);
+                  }}
+                >
+                  {t("استكشاف", "Explore")}
+                </button>
+                <button
+                  className={`flex-1 py-3 px-2 text-center font-medium ${
+                    activeTab === "mywishes"
+                    ? "border-b-2 border-purple-600 text-purple-600"
+                    : "text-gray-500"
+                  }`}
+                  onClick={() => {
+                    setActiveTab("mywishes");
+                    setCurrentProfile(null);
+                  }}
+                >
+                  {t("قائمتي", "My List")}
+                </button>
+                <button
+                  className={`flex-1 py-3 px-2 text-center font-medium ${
+                    activeTab === "profile"
+                    ? "border-b-2 border-purple-600 text-purple-600"
+                    : "text-gray-500"
+                  }`}
+                  onClick={() => {
+                    setActiveTab("profile");
+                    setCurrentProfile(currentUser);
+                  }}
+                >
+                  {t("حسابي", "Profile")}
+                </button>
+              </div>
+              
+              {/* محتوى التبويب النشط */}
+              <div className="p-4">
+                {/* تبويب الرئيسية */}
+                {activeTab === "feed" && (
+                  <div className="space-y-4">
+                    <h2 className="text-xl font-bold">
+                      {t("آخر الأنشطة", "Recent Activity")}
+                    </h2>
+                    
+                    {dummyActivities.map(activity => (
+                      <div key={activity.id} className="border rounded-lg p-4 bg-white">
+                        <div className="flex items-center mb-2">
+                          <img 
+                            src={activity.user.avatar} 
+                            alt="" 
+                            className="w-10 h-10 rounded-full"
+                            onClick={() => viewProfile(activity.user.id)}
+                          />
+                          <div className="mr-3 cursor-pointer" onClick={() => viewProfile(activity.user.id)}>
+                            <div className="font-medium">{activity.user.name}</div>
+                            <div className="text-xs text-gray-500">@{activity.user.username}</div>
+                          </div>
+                        </div>
+                        
+                        <div className="mb-2">
+                          {activity.type === "add_item" && (
+                            <p>
+                              {t(`أضاف منتج "${activity.item.name}" إلى قائمة أمنياته`, 
+                                `Added "${activity.item.name}" to their wishlist`)}
+                            </p>
+                          )}
+                          
+                          {activity.type === "follow" && (
+                            <p>
+                              {t(`بدأ بمتابعة ${activity.targetUser.name}`, 
+                                `Started following ${activity.targetUser.name}`)}
+                            </p>
+                          )}
+                          
+                          {activity.type === "create_list" && (
+                            <p>
+                              {t(`أنشأ قائمة أمنيات جديدة "${activity.listName}"`, 
+                                `Created a new wishlist "${activity.listName}"`)}
+                            </p>
+                          )}
+                        </div>
+                        
+                        {activity.type === "add_item" && activity.item.image && (
+                          <div className="border rounded-lg overflow-hidden mb-2">
+                            <img src={activity.item.image} alt="" className="w-full h-48 object-cover" />
+                          </div>
+                        )}
+                        
+                        <div className="text-xs text-gray-500">
+                          {formatTimestamp(activity.timestamp)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* تبويب الاستكشاف */}
+                {activeTab === "explore" && (
+                  <div className="space-y-4">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder={t("ابحث عن مستخدمين...", "Search users...")}
+                        className="w-full p-3 pr-10 border rounded-lg bg-gray-50"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                      <span className="absolute right-3 top-3 text-gray-400">🔍</span>
+                    </div>
+                    
+                    <h2 className="text-xl font-bold mt-4">
+                      {t("اكتشف المستخدمين", "Discover Users")}
+                    </h2>
+                    
+                    <div className="grid grid-cols-1 gap-4">
+                      {searchUsers().filter(user => user.id !== currentUser.id).map(user => (
+                        <div 
+                          key={user.id} 
+                          className="border rounded-lg p-4 bg-white cursor-pointer"
+                          onClick={() => viewProfile(user.id)}
+                        >
+                          <div className="flex items-center">
+                            <img src={user.avatar} alt="" className="w-14 h-14 rounded-full" />
+                            <div className="mr-3 flex-1">
+                              <div className="font-medium">{user.name}</div>
+                              <div className="text-sm text-gray-500">@{user.username}</div>
+                              <div className="text-sm mt-1 line-clamp-1">{user.bio}</div>
+                            </div>
+                            <button className="px-3 py-1 border border-purple-600 text-purple-600 rounded-full text-sm hover:bg-purple-50">
+                              {t("متابعة", "Follow")}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* تبويب قائمة أمنياتي */}
+                {activeTab === "mywishes" && (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-xl font-bold">
+                        {t("قائمة أمنياتي", "My Wishlist")}
+                      </h2>
+                      <button 
+                        onClick={() => setShowAddItemModal(true)}
+                        className="px-3 py-1.5 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700 transition-colors"
+                      >
+                        {t("+ إضافة", "+ Add Item")}
+                      </button>
+                    </div>
+                    
+                    {!currentUser.wishlist || currentUser.wishlist.length === 0 ? (
+                      <div className="text-center py-12 px-4 border-2 border-dashed rounded-lg">
+                        <div className="text-4xl mb-2">✨</div>
+                        <h3 className="text-lg font-medium text-gray-700 mb-2">
+                          {t("قائمة أمنياتك فارغة", "Your Wishlist is Empty")}
+                        </h3>
+                        <p className="text-gray-500 mb-4">
+                          {t("أضف المنتجات التي تتمناها ليراها أصدقاؤك", 
+                            "Add items you wish for so your friends can see them")}
+                        </p>
+                        <button 
+                          onClick={() => setShowAddItemModal(true)}
+                          className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                        >
+                          {t("أضف منتج الآن", "Add Item Now")}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {currentUser.wishlist.map(item => (
+                          <div key={item.id} className="border rounded-lg overflow-hidden flex bg-white">
+                            <div className="w-24 h-24 bg-gray-100 flex items-center justify-center flex-shrink-0">
+                              {item.image ? (
+                                <img src={item.image} alt="" className="h-20 object-contain" />
+                              ) : (
+                                <div className="text-gray-300 text-3xl">🖼️</div>
+                              )}
+                            </div>
+                            <div className="p-3 flex-grow">
+                              <div className="flex justify-between">
+                                <h4 className="font-medium">{item.name}</h4>
+                                <div className={`text-xs px-2 py-1 rounded-full ${getStatusColor(item.status)}`}>
+                                  {getStatusText(item.status)}
+                                </div>
+                              </div>
+                              {item.price && (
+                                <div className="text-sm text-gray-600 mt-1">
+                                  {item.price} {t("ر.س", "SAR")}
+                                </div>
+                              )}
+                              {item.link && (
+                                <div className="mt-2">
+                                  <a 
+                                    href={item.link} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-sm text-purple-600 hover:underline"
+                                  >
+                                    {t("رابط المنتج", "Product Link")} ↗
+                                  </a>
+                                </div>
+                              )}
+                              <div className="mt-2 flex">
+                                <button
+                                  onClick={() => openShareModal(item)}
+                                  className="text-xs px-2 py-1 text-purple-600 border border-purple-200 rounded-md hover:bg-purple-50"
+                                >
+                                  {t("مشاركة هذا المنتج", "Share This Item")}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <div className="mt-6 p-4 bg-purple-50 rounded-lg">
+                      <h3 className="font-medium text-purple-800 mb-2">
+                        {t("مشاركة قائمة أمنياتك", "Share Your Wishlist")}
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-3">
+                        {t("شارك قائمتك مع أصدقائك ليعرفوا ما ترغب به", 
+                          "Share your list with friends so they know what you'd love")}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <button 
+                          onClick={() => shareWishlist("copy")} 
+                          className="flex items-center px-3 py-2 bg-white text-gray-700 border rounded-md text-sm hover:bg-gray-50"
+                        >
+                          <span className="mr-1">📋</span>
+                          {t("نسخ الرابط", "Copy Link")}
+                        </button>
+                        
+                        <button 
+                          onClick={() => shareWishlist("whatsapp")} 
+                          className="flex items-center px-3 py-2 bg-green-50 text-green-700 border border-green-200 rounded-md text-sm hover:bg-green-100"
+                        >
+                          <span className="mr-1">💬</span>
+                          {t("واتساب", "WhatsApp")}
+                        </button>
+                        
+                        <button 
+                          onClick={() => shareWishlist("snapchat")} 
+                          className="flex items-center px-3 py-2 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-md text-sm hover:bg-yellow-100"
+                        >
+                          <span className="mr-1">👻</span>
+                          {t("سناب شات", "Snapchat")}
+                        </button>
+                        
+                        <button 
+                          onClick={() => openShareModal()} 
+                          className="flex items-center px-3 py-2 bg-purple-50 text-purple-700 border border-purple-200 rounded-md text-sm hover:bg-purple-100"
+                        >
+                          <span className="mr-1">✨</span>
+                          {t("خيارات أخرى", "More Options")}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* تبويب البروفايل */}
+                {activeTab === "profile" && currentProfile && (
+                  <div className="space-y-4">
+                    <div className="text-center">
+                      <img 
+                        src={currentProfile.avatar} 
+                        alt="" 
+                        className="w-24 h-24 rounded-full mx-auto border-4 border-white shadow"
+                      />
+                      <h2 className="text-xl font-bold mt-2">{currentProfile.name}</h2>
+                      <div className="text-gray-500">@{currentProfile.username}</div>
+                      <p className="mt-2 text-sm">{currentProfile.bio}</p>
+                      
+                      <div className="flex justify-center gap-6 mt-3">
+                        <div className="text-center">
+                          <div className="font-bold">{currentProfile.followers}</div>
+                          <div className="text-xs text-gray-500">{t("متابعين", "Followers")}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-bold">{currentProfile.following}</div>
+                          <div className="text-xs text-gray-500">{t("يتابع", "Following")}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-bold">{currentProfile.wishlist?.length || 0}</div>
+                          <div className="text-xs text-gray-500">{t("أمنيات", "Wishes")}</div>
+                        </div>
+                      </div>
+                      
+                      {currentProfile.id !== currentUser.id && (
+                        <button className="mt-3 px-4 py-1.5 bg-purple-600 text-white rounded-full text-sm hover:bg-purple-700 transition-colors">
+                          {t("متابعة", "Follow")}
+                        </button>
+                      )}
+                    </div>
+                    
+                    <div className="border-t border-b py-3 mt-4">
+                      <h3 className="font-bold text-lg">
+                        {t("قائمة الأمنيات", "Wishlist")}
+                      </h3>
+                    </div>
+                    
+                    {!currentProfile.wishlist || currentProfile.wishlist.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500">
+                          {t("لا توجد أمنيات حتى الآن", "No wishes yet")}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {currentProfile.wishlist.map(item => (
+                          <div key={item.id} className="border rounded-lg overflow-hidden flex bg-white">
+                            <div className="w-24 h-24 bg-gray-100 flex items-center justify-center flex-shrink-0">
+                              {item.image ? (
+                                <img src={item.image} alt="" className="h-20 object-contain" />
+                              ) : (
+                                <div className="text-gray-300 text-3xl">🖼️</div>
+                              )}
+                            </div>
+                            <div className="p-3 flex-grow">
+                              <div className="flex justify-between">
+                                <h4 className="font-medium">{item.name}</h4>
+                                <div className={`text-xs px-2 py-1 rounded-full ${getStatusColor(item.status)}`}>
+                                  {getStatusText(item.status)}
+                                </div>
+                              </div>
+                              {item.price && (
+                                <div className="text-sm text-gray-600 mt-1">
+                                  {item.price} {t("ر.س", "SAR")}
+                                </div>
+                              )}
+                              {currentProfile.id !== currentUser.id && item.status === "available" && (
+                                <button 
+                                  onClick={() => reserveItem(currentProfile.id, item.id)}
+                                  className="mt-2 text-sm px-3 py-1 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                                >
+                                  {t("سأهديها", "I'll Gift This")}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-full p-4">
+              <div className="text-center">
+                <div className="text-6xl mb-4">✨</div>
+                <h2 className="text-2xl font-bold mb-4">
+                  {t("مرحباً بك في تطبيق SURPRISE ME", "Welcome to SURPRISE ME App")}
+                </h2>
+                <p className="mb-6">
+                  {t("شارك أمنياتك مع أصدقائك وتعرف على ما يرغبون به", 
+                    "Share your wishes with friends and discover what they want")}
+                </p>
+                <button 
+                  onClick={() => setShowLoginModal(true)}
+                  className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                >
+                  {t("تسجيل الدخول / إنشاء حساب", "Sign In / Register")}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* نافذة تسجيل الدخول / إنشاء حساب */}
+        {showLoginModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg w-full max-w-md">
+              <div className="p-5 border-b">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-bold">
+                    {t("تسجيل الدخول / إنشاء حساب", "Sign In / Register")}
+                  </h3>
+                  <div className="font-bold text-xl text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
+                    SURPRISE ME
+                  </div>
+                </div>
+              </div>
+              <div className="p-5">
+                <div className="mb-4">
+                  <button 
+                    onClick={handleLogin}
+                    className="w-full py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                  >
+                    {t("تسجيل الدخول التجريبي", "Demo Login")}
+                  </button>
+                </div>
+                <div className="relative mb-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-gray-500">
+                      {t("أو", "OR")}
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    placeholder={t("الاسم الكامل", "Full Name")}
+                    value={newUser.name}
+                    onChange={(e) => setNewUser({...newUser, name: e.target.value})}
+                    className="w-full p-2 border rounded-md"
+                  />
+                  <input
+                    type="text"
+                    placeholder={t("اسم المستخدم", "Username")}
+                    value={newUser.username}
+                    onChange={(e) => setNewUser({...newUser, username: e.target.value})}
+                    className="w-full p-2 border rounded-md"
+                  />
+                  <input
+                    type="email"
+                    placeholder={t("البريد الإلكتروني", "Email")}
+                    value={newUser.email}
+                    onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                    className="w-full p-2 border rounded-md"
+                  />
+                  <input
+                    type="password"
+                    placeholder={t("كلمة المرور", "Password")}
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                    className="w-full p-2 border rounded-md"
+                  />
+                  <textarea
+                    placeholder={t("نبذة عنك", "Bio")}
+                    value={newUser.bio}
+                    onChange={(e) => setNewUser({...newUser, bio: e.target.value})}
+                    className="w-full p-2 border rounded-md h-20"
+                  ></textarea>
+                </div>
+              </div>
+              <div className="p-5 border-t">
+                <button 
+                  onClick={handleRegister}
+                  className="w-full py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                >
+                  {t("إنشاء حساب", "Register")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* نافذة إضافة منتج لقائمة الأمنيات */}
+        {showAddItemModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg w-full max-w-md">
+              <div className="p-5 border-b">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-bold">
+                    {t("إضافة منتج لقائمة الأمنيات", "Add Item to Wishlist")}
+                  </h3>
+                  <div className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
+                    SURPRISE ME
+                  </div>
+                </div>
+              </div>
+              <div className="p-5 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t("اسم المنتج", "Item Name")} *
+                  </label>
+                  <input
+                    type="text"
+                    value={newItem.name}
+                    onChange={(e) => setNewItem({...newItem, name: e.target.value})}
+                    className="w-full p-2 border rounded-md"
+                    placeholder={t("مثال: سماعات لاسلكية", "e.g. Wireless Earbuds")}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t("رابط المنتج", "Product Link")}
+                  </label>
+                  <input
+                    type="text"
+                    value={newItem.link}
+                    onChange={(e) => setNewItem({...newItem, link: e.target.value})}
+                    className="w-full p-2 border rounded-md"
+                    placeholder={t("رابط المتجر", "Store URL")}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t("رابط الصورة", "Image URL")}
+                  </label>
+                  <input
+                    type="text"
+                    value={newItem.image}
+                    onChange={(e) => setNewItem({...newItem, image: e.target.value})}
+                    className="w-full p-2 border rounded-md"
+                    placeholder={t("رابط الصورة", "Image URL")}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t("السعر (ريال سعودي)", "Price (SAR)")}
+                  </label>
+                  <input
+                    type="text"
+                    value={newItem.price}
+                    onChange={(e) => setNewItem({...newItem, price: e.target.value})}
+                    className="w-full p-2 border rounded-md"
+                    placeholder="199"
+                  />
+                </div>
+              </div>
+              <div className="p-5 border-t flex justify-end gap-3">
+                <button
+                  onClick={() => setShowAddItemModal(false)}
+                  className="px-4 py-2 text-gray-700 border rounded-md hover:bg-gray-50"
+                >
+                  {t("إلغاء", "Cancel")}
+                </button>
+                <button
+                  onClick={addToWishlist}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                >
+                  {t("إضافة", "Add")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* نافذة مشاركة قائمة الأمنيات */}
+        {showShareModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg w-full max-w-md">
+              <div className="p-5 border-b">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-bold">
+                    {selectedItem 
+                      ? t("مشاركة منتج", "Share Item") 
+                      : t("مشاركة قائمة الأمنيات", "Share Wishlist")}
+                  </h3>
+                  <div className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
+                    SURPRISE ME
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-5 space-y-4">
+                {selectedItem && (
+                  <div className="p-3 bg-gray-50 rounded-lg flex items-center space-x-3">
+                    {selectedItem.image ? (
+                      <img src={selectedItem.image} alt="" className="w-16 h-16 object-contain" />
+                    ) : (
+                      <div className="w-16 h-16 bg-gray-200 flex items-center justify-center text-gray-400 text-3xl">
+                        🖼️
+                      </div>
+                    )}
+                    <div>
+                      <h4 className="font-medium">{selectedItem.name}</h4>
+                      {selectedItem.price && (
+                        <div className="text-sm text-gray-600">
+                          {selectedItem.price} {t("ر.س", "SAR")}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                <div>
+                  <h4 className="font-medium mb-2">
+                    {t("مشاركة عبر", "Share via")}
+                  </h4>
+                  <div className="grid grid-cols-4 gap-2">
+                    <button
+                      onClick={() => shareWishlist("whatsapp")}
+                      className="p-3 flex flex-col items-center rounded-lg bg-green-50 hover:bg-green-100"
+                    >
+                      <span className="text-2xl mb-1">💬</span>
+                      <span className="text-xs">{t("واتساب", "WhatsApp")}</span>
+                    </button>
+                    <button
+                      onClick={() => shareWishlist("snapchat")}
+                      className="p-3 flex flex-col items-center rounded-lg bg-yellow-50 hover:bg-yellow-100"
+                    >
+                      <span className="text-2xl mb-1">👻</span>
+                      <span className="text-xs">{t("سناب شات", "Snapchat")}</span>
+                    </button>
+                    <button
+                      onClick={() => shareWishlist("twitter")}
+                      className="p-3 flex flex-col items-center rounded-lg bg-blue-50 hover:bg-blue-100"
+                    >
+                      <span className="text-2xl mb-1">🐦</span>
+                      <span className="text-xs">{t("تويتر", "Twitter")}</span>
+                    </button>
+                    <button
+                      onClick={() => shareWishlist("email")}
+                      className="p-3 flex flex-col items-center rounded-lg bg-gray-100 hover:bg-gray-200"
+                    >
+                      <span className="text-2xl mb-1">✉️</span>
+                      <span className="text-xs">{t("إيميل", "Email")}</span>
+                    </button>
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium mb-2">
+                    {t("نسخ الرابط", "Copy Link")}
+                  </h4>
+                  <div className="flex">
+                    <input
+                      type="text"
+                      readOnly
+                      value={selectedItem 
+                        ? `https://surpriseme.app/u/${currentUser.username}/item/${selectedItem.id}`
+                        : `https://surpriseme.app/u/${currentUser.username}`}
+                      className="flex-1 p-2 border rounded-l-md bg-gray-50 text-sm"
+                    />
+                    <button
+                      onClick={() => shareWishlist("copy")}
+                      className="px-3 py-2 bg-gray-200 rounded-r-md hover:bg-gray-300"
+                    >
+                      {t("نسخ", "Copy")}
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="pt-2">
+                  <div className="text-xs text-gray-500 text-center">
+                    {t("شارك SURPRISE ME مع أصدقائك لمعرفة ما يتمنون", 
+                      "Share SURPRISE ME with your friends to discover what they wish for")}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-5 border-t">
+                <button
+                  onClick={() => {
+                    setShowShareModal(false);
+                    setSelectedItem(null);
+                  }}
+                  className="w-full p-2 border rounded-md hover:bg-gray-50"
+                >
+                  {t("إغلاق", "Close")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default App;

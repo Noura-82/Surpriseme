@@ -1,0 +1,597 @@
+import { useState, useEffect } from "react";
+import "./App.css";
+
+// قائمة الاهتمامات المخصصة للشباب السعودي (18-35)
+const interestsList = [
+  { id: "tech", nameAr: "تقنية وقادجت", nameEn: "Tech & Gadgets" },
+  { id: "gaming", nameAr: "ألعاب إلكترونية", nameEn: "Gaming" },
+  { id: "fashion", nameAr: "أزياء عصرية", nameEn: "Fashion" },
+  { id: "sports", nameAr: "رياضة ولياقة", nameEn: "Sports & Fitness" },
+  { id: "travel", nameAr: "سفر ومغامرات", nameEn: "Travel & Adventure" },
+  { id: "local", nameAr: "منتجات محلية عصرية", nameEn: "Modern Local Products" },
+  { id: "coffee", nameAr: "قهوة وكافيهات", nameEn: "Coffee & Cafes" },
+  { id: "entertainment", nameAr: "ترفيه وفعاليات", nameEn: "Entertainment & Events" },
+  { id: "oud", nameAr: "عطور وبخور", nameEn: "Perfumes" },
+  { id: "selfcare", nameAr: "العناية الشخصية", nameEn: "Self-care" }
+];
+
+// قائمة المناسبات المحلية
+const occasions = [
+  { id: "birthday", nameAr: "عيد ميلاد", nameEn: "Birthday" },
+  { id: "eid", nameAr: "عيد الفطر/الأضحى", nameEn: "Eid" },
+  { id: "graduation", nameAr: "تخرج", nameEn: "Graduation" },
+  { id: "promotion", nameAr: "ترقية وظيفية", nameEn: "Job Promotion" },
+  { id: "newjob", nameAr: "وظيفة جديدة", nameEn: "New Job" },
+  { id: "engagement", nameAr: "خطوبة", nameEn: "Engagement" },
+  { id: "friendship", nameAr: "صداقة", nameEn: "Friendship" },
+  { id: "seasonal", nameAr: "مواسم الترفيه", nameEn: "Entertainment Seasons" },
+  { id: "thanks", nameAr: "شكر وتقدير", nameEn: "Thank You" }
+];
+
+// بيانات هدايا وهمية مخصصة للشباب السعودي (18-35)
+const mockGifts = [
+  { 
+    id: 1, 
+    nameAr: "سماعات لاسلكية فاخرة", 
+    nameEn: "Premium Wireless Earbuds", 
+    category: "tech",
+    price: 699,
+    currency: "SAR",
+    imageUrl: "/api/placeholder/300/300",
+    stores: ["جرير", "اكسترا", "أمازون"],
+    rating: 4.7,
+    trending: true
+  },
+  { 
+    id: 2, 
+    nameAr: "اشتراك منصة ألعاب", 
+    nameEn: "Gaming Platform Subscription", 
+    category: "gaming",
+    price: 240,
+    currency: "SAR",
+    imageUrl: "/api/placeholder/300/300",
+    stores: ["إلكترونيات", "نون", "متجر بلاي ستيشن"],
+    rating: 4.9,
+    trending: true
+  },
+  { 
+    id: 3, 
+    nameAr: "حقيبة ظهر للسفر والمغامرات", 
+    nameEn: "Adventure Travel Backpack", 
+    category: "travel",
+    price: 450,
+    currency: "SAR",
+    imageUrl: "/api/placeholder/300/300",
+    stores: ["دكاثلون", "نمشي", "أمازون"],
+    rating: 4.6,
+    trending: false
+  },
+  { 
+    id: 4, 
+    nameAr: "قسيمة لفعالية موسم الرياض", 
+    nameEn: "Riyadh Season Event Voucher", 
+    category: "entertainment",
+    price: 350,
+    currency: "SAR",
+    imageUrl: "/api/placeholder/300/300",
+    stores: ["تذاكري", "موقع موسم الرياض"],
+    rating: 4.8,
+    trending: true
+  },
+  { 
+    id: 5, 
+    nameAr: "حامل قهوة محمول مبتكر", 
+    nameEn: "Innovative Portable Coffee Holder", 
+    category: "coffee",
+    price: 190,
+    currency: "SAR",
+    imageUrl: "/api/placeholder/300/300",
+    stores: ["ستاربكس", "دنكن", "أمازون"],
+    rating: 4.3,
+    trending: false
+  },
+  { 
+    id: 6, 
+    nameAr: "عطر عربي بلمسة عصرية", 
+    nameEn: "Modern Arabic Perfume", 
+    category: "oud",
+    price: 450,
+    currency: "SAR",
+    imageUrl: "/api/placeholder/300/300",
+    stores: ["العربية للعود", "سيفورا", "نون"],
+    rating: 4.5,
+    trending: true
+  },
+  { 
+    id: 7, 
+    nameAr: "اشتراك نادي رياضي", 
+    nameEn: "Gym Membership", 
+    category: "sports",
+    price: 750,
+    currency: "SAR",
+    imageUrl: "/api/placeholder/300/300",
+    stores: ["فتنس تايم", "نادي وقت اللياقة", "جولدز جيم"],
+    rating: 4.4,
+    trending: true
+  },
+  { 
+    id: 8, 
+    nameAr: "قميص بتصميم سعودي معاصر", 
+    nameEn: "Contemporary Saudi Design T-shirt", 
+    category: "local",
+    price: 180,
+    currency: "SAR",
+    imageUrl: "/api/placeholder/300/300",
+    stores: ["تراثنا", "مركز الموضة", "H&M"],
+    rating: 4.2,
+    trending: false
+  },
+  { 
+    id: 9, 
+    nameAr: "مجموعة مستحضرات عناية شخصية فاخرة", 
+    nameEn: "Luxury Self-care Kit", 
+    category: "selfcare",
+    price: 350,
+    currency: "SAR",
+    imageUrl: "/api/placeholder/300/300",
+    stores: ["سيفورا", "وجوه", "بات باث آند بيوند"],
+    rating: 4.6,
+    trending: true
+  },
+  { 
+    id: 10, 
+    nameAr: "حذاء رياضي محدود الإصدار", 
+    nameEn: "Limited Edition Sneakers", 
+    category: "fashion",
+    price: 850,
+    currency: "SAR",
+    imageUrl: "/api/placeholder/300/300",
+    stores: ["نايك", "أديداس", "فوت لوكر"],
+    rating: 4.7,
+    trending: true
+  }
+];
+
+function App() {
+  const [language, setLanguage] = useState("ar"); // "ar" للعربية، "en" للإنجليزية
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [step, setStep] = useState(1);
+  const [interests, setInterests] = useState([]);
+  const [wishlist, setWishlist] = useState([]);
+  const [friendsWishlists, setFriendsWishlists] = useState([]);
+  const [activeTab, setActiveTab] = useState("discover");
+  const [showAddItemModal, setShowAddItemModal] = useState(false);
+  const [newItem, setNewItem] = useState({ name: "", link: "", image: "", price: "" });
+  
+  // التبديل بين اللغات
+  const toggleLanguage = () => {
+    setLanguage(prev => prev === "ar" ? "en" : "ar");
+  };
+
+  // إضافة/إزالة الاهتمامات
+  const toggleInterest = (itemId) => {
+    setInterests((prev) =>
+      prev.includes(itemId) ? prev.filter((i) => i !== itemId) : [...prev, itemId]
+    );
+  };
+
+  // إضافة منتج جديد لقائمة الأمنيات
+  const addToWishlist = () => {
+    if (newItem.name.trim() !== "") {
+      setWishlist([...wishlist, { ...newItem, id: Date.now() }]);
+      setNewItem({ name: "", link: "", image: "", price: "" });
+      setShowAddItemModal(false);
+    }
+  };
+
+  // إزالة منتج من قائمة الأمنيات
+  const removeFromWishlist = (itemId) => {
+    setWishlist(wishlist.filter(item => item.id !== itemId));
+  };
+
+  // الترجمة حسب اللغة المختارة
+  const t = (ar, en) => language === "ar" ? ar : en;
+
+  // اتجاه النص حسب اللغة
+  const dir = language === "ar" ? "rtl" : "ltr";
+  
+  // بيانات وهمية لقوائم أمنيات الأصدقاء
+  const dummyFriendsWishlists = [
+    {
+      id: 1,
+      friend: { name: t("سارة الأحمد", "Sara Ahmad"), avatar: "/api/placeholder/100/100" },
+      occasion: t("عيد ميلاد", "Birthday"),
+      date: "2025-05-10",
+      items: [
+        { id: 101, name: t("سماعات لاسلكية", "Wireless Earbuds"), link: "#", price: "349" },
+        { id: 102, name: t("كتاب رواية", "Novel Book"), link: "#", price: "85" }
+      ]
+    },
+    {
+      id: 2,
+      friend: { name: t("محمد العتيبي", "Mohammed Al-Otaibi"), avatar: "/api/placeholder/100/100" },
+      occasion: t("تخرج", "Graduation"),
+      date: "2025-06-20",
+      items: [
+        { id: 201, name: t("ساعة ذكية", "Smart Watch"), link: "#", price: "1200" },
+        { id: 202, name: t("حقيبة لابتوب", "Laptop Bag"), link: "#", price: "350" }
+      ]
+    }
+  ];
+  
+  return (
+    <div className={`min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-8 ${dir === "rtl" ? "font-arabic" : ""}`} dir={dir}>
+      <div className="w-full max-w-2xl bg-white shadow-lg rounded-xl p-6">
+        {/* شريط اللغة والشعار */}
+        <div className="flex justify-between items-center mb-6">
+          <div className="font-bold text-xl text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
+            {t("هدايا - مفاجآت", "GIFT IT")}
+          </div>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={toggleLanguage}
+              className="px-3 py-1 bg-gray-200 rounded-md text-sm hover:bg-gray-300 transition-colors"
+            >
+              {t("English", "العربية")}
+            </button>
+            <button className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full font-medium">
+              {t("جديد!", "NEW!")}
+            </button>
+          </div>
+        </div>
+
+        {/* الخطوة 1: إنشاء الحساب */}
+        {step === 1 && (
+          <div className="space-y-4">
+            <h1 className="text-2xl font-bold text-gray-800">{t("إنشاء حسابك", "Create Your Account")}</h1>
+            <div className="space-y-3">
+              <input
+                type="text"
+                placeholder={t("الاسم الكامل", "Full Name")}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="border p-3 w-full rounded-lg focus:ring focus:ring-green-300 focus:border-green-500 outline-none"
+              />
+              <input
+                type="email"
+                placeholder={t("البريد الإلكتروني", "Email Address")}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="border p-3 w-full rounded-lg focus:ring focus:ring-green-300 focus:border-green-500 outline-none"
+              />
+              <input
+                type="tel"
+                placeholder={t("رقم الجوال", "Phone Number")}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="border p-3 w-full rounded-lg focus:ring focus:ring-green-300 focus:border-green-500 outline-none"
+              />
+            </div>
+            <button
+              onClick={() => setStep(2)}
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium w-full transition-colors"
+            >
+              {t("التالي", "Next")}
+            </button>
+          </div>
+        )}
+
+        {/* الخطوة 2: اختيار الاهتمامات والتفضيلات */}
+        {step === 2 && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800 mb-3">
+                {t("اختر الاهتمامات", "Select Interests")}
+              </h2>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {interestsList.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => toggleInterest(item.id)}
+                    className={`px-4 py-2 rounded-lg border transition-colors ${
+                      interests.includes(item.id)
+                        ? "bg-green-600 text-white border-green-600"
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
+                    }`}
+                  >
+                    {language === "ar" ? item.nameAr : item.nameEn}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800 mb-3">
+                {t("اختر المناسبة", "Select Occasion")}
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
+                {occasions.map((occasion) => (
+                  <button
+                    key={occasion.id}
+                    onClick={() => setSelectedOccasion(occasion.id)}
+                    className={`px-4 py-2 rounded-lg border transition-colors ${
+                      selectedOccasion === occasion.id
+                        ? "bg-green-600 text-white border-green-600"
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
+                    }`}
+                  >
+                    {language === "ar" ? occasion.nameAr : occasion.nameEn}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800 mb-3">
+                {t("حدد الميزانية (ريال سعودي)", "Set Budget (SAR)")}
+              </h2>
+              <div className="flex items-center justify-between mb-2">
+                <span>{budget.min} {t("ر.س", "SAR")}</span>
+                <span>{budget.max} {t("ر.س", "SAR")}</span>
+              </div>
+              <div className="flex gap-4">
+                <input
+                  type="range"
+                  min="0"
+                  max="500"
+                  value={budget.min}
+                  onChange={(e) => setBudget({ ...budget, min: parseInt(e.target.value) })}
+                  className="w-1/2"
+                />
+                <input
+                  type="range"
+                  min="500"
+                  max="2000"
+                  value={budget.max}
+                  onChange={(e) => setBudget({ ...budget, max: parseInt(e.target.value) })}
+                  className="w-1/2"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800 mb-3">
+                {t("من سيحصل على الهدية؟", "Who is the Gift For?")}
+              </h2>
+              <select
+                value={recipient}
+                onChange={(e) => setRecipient(e.target.value)}
+                className="border p-3 w-full rounded-lg focus:ring focus:ring-green-300 focus:border-green-500 outline-none"
+              >
+                <option value="">{t("اختر العلاقة", "Select Relationship")}</option>
+                <option value="spouse">{t("زوج/زوجة", "Spouse")}</option>
+                <option value="parent">{t("والد/والدة", "Parent")}</option>
+                <option value="child">{t("ابن/ابنة", "Child")}</option>
+                <option value="friend">{t("صديق/صديقة", "Friend")}</option>
+                <option value="colleague">{t("زميل عمل", "Colleague")}</option>
+              </select>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setStep(1)}
+                className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-3 rounded-lg font-medium flex-1 transition-colors"
+              >
+                {t("رجوع", "Back")}
+              </button>
+              <button
+                onClick={() => setStep(3)}
+                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium flex-1 transition-colors"
+              >
+                {t("اعرض الاقتراحات", "Show Recommendations")}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* الخطوة 3: عرض الهدايا المقترحة */}
+        {step === 3 && (
+          <div className="flex flex-col h-full">
+            {/* شريط التنقل */}
+            <div className="flex border-b mb-4">
+              <button
+                className={`flex-1 py-3 px-2 text-center font-medium ${
+                  activeTab === "discover"
+                  ? "border-b-2 border-purple-600 text-purple-600"
+                  : "text-gray-500"
+                }`}
+                onClick={() => setActiveTab("discover")}
+              >
+                {t("استكشف الأفكار", "Discover")}
+              </button>
+              <button
+                className={`flex-1 py-3 px-2 text-center font-medium ${
+                  activeTab === "mywishes"
+                  ? "border-b-2 border-purple-600 text-purple-600"
+                  : "text-gray-500"
+                }`}
+                onClick={() => setActiveTab("mywishes")}
+              >
+                {t("قائمة أمنياتي", "My Wishlist")}
+              </button>
+              <button
+                className={`flex-1 py-3 px-2 text-center font-medium ${
+                  activeTab === "friends"
+                  ? "border-b-2 border-purple-600 text-purple-600"
+                  : "text-gray-500"
+                }`}
+                onClick={() => setActiveTab("friends")}
+              >
+                {t("أصدقائي", "Friends")}
+              </button>
+            </div>
+            
+            {/* تبويب استكشف الأفكار */}
+            {activeTab === "discover" && (
+              <div className="space-y-4">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder={t("ابحث عن أفكار هدايا...", "Search for gift ideas...")}
+                    className="w-full p-3 pr-10 border rounded-lg bg-gray-50"
+                  />
+                  <span className="absolute right-3 top-3 text-gray-400">🔍</span>
+                </div>
+                
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="text-sm font-medium text-gray-500 py-1">
+                    {t("مقترح:", "Suggested:")}
+                  </span>
+                  {interestsList.slice(0, 5).map((item) => (
+                    <button
+                      key={item.id}
+                      className="px-3 py-1 rounded-full bg-purple-100 text-purple-800 text-sm"
+                    >
+                      {language === "ar" ? item.nameAr : item.nameEn}
+                    </button>
+                  ))}
+                </div>
+                
+                <div className="space-y-4">
+                  <h3 className="font-medium text-lg">{t("الأكثر شعبية", "Trending Now")}</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    {mockGifts.filter(g => g.trending).slice(0, 4).map(gift => (
+                      <div key={gift.id} className="border rounded-lg overflow-hidden bg-white">
+                        <div className="h-32 overflow-hidden bg-gray-100 flex items-center justify-center">
+                          <img src={gift.imageUrl} alt="" className="h-28 object-contain" />
+                        </div>
+                        <div className="p-3">
+                          <h4 className="font-medium text-sm">
+                            {language === "ar" ? gift.nameAr : gift.nameEn}
+                          </h4>
+                          <div className="flex justify-between items-center mt-2">
+                            <span className="text-sm text-gray-600">
+                              {gift.price} {t("ر.س", "SAR")}
+                            </span>
+                            <button className="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-700">
+                              {t("+ أضف", "+ Add")}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="space-y-3 mt-6">
+                  <h3 className="font-medium text-lg">{t("مجموعات مقترحة", "Featured Collections")}</h3>
+                  <div className="space-y-3">
+                    <div className="border rounded-lg p-4 bg-gradient-to-r from-purple-50 to-pink-50">
+                      <h4 className="font-medium">{t("هدايا تناسب كل الميزانيات", "Gifts For Every Budget")}</h4>
+                      <p className="text-sm text-gray-600 mt-1">{t("22 فكرة رائعة", "22 awesome ideas")}</p>
+                      <div className="flex justify-end">
+                        <button className="text-sm text-purple-700">{t("استعرض", "View")}</button>
+                      </div>
+                    </div>
+                    <div className="border rounded-lg p-4 bg-gradient-to-r from-blue-50 to-teal-50">
+                      <h4 className="font-medium">{t("أفكار هدايا التخرج", "Graduation Gift Ideas")}</h4>
+                      <p className="text-sm text-gray-600 mt-1">{t("17 فكرة مميزة", "17 unique ideas")}</p>
+                      <div className="flex justify-end">
+                        <button className="text-sm text-purple-700">{t("استعرض", "View")}</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* تبويب قائمة أمنياتي */}
+            {activeTab === "mywishes" && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xl font-bold text-gray-800">
+                    {t("قائمة أمنياتي", "My Wishlist")}
+                  </h2>
+                  <button 
+                    onClick={() => setShowAddItemModal(true)}
+                    className="px-3 py-1.5 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700 transition-colors"
+                  >
+                    {t("+ إضافة", "+ Add Item")}
+                  </button>
+                </div>
+                
+                {wishlist.length === 0 ? (
+                  <div className="text-center py-12 px-4 border-2 border-dashed rounded-lg">
+                    <div className="text-4xl mb-2">✨</div>
+                    <h3 className="text-lg font-medium text-gray-700 mb-2">
+                      {t("قائمة أمنياتك فارغة", "Your Wishlist is Empty")}
+                    </h3>
+                    <p className="text-gray-500 mb-4">
+                      {t("أضف المنتجات التي تتمناها ليراها أصدقاؤك", 
+                        "Add items you wish for so your friends can see them")}
+                    </p>
+                    <button 
+                      onClick={() => setShowAddItemModal(true)}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                    >
+                      {t("أضف منتج الآن", "Add Item Now")}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {wishlist.map(item => (
+                      <div key={item.id} className="border rounded-lg overflow-hidden flex bg-white">
+                        <div className="w-24 h-24 bg-gray-100 flex items-center justify-center flex-shrink-0">
+                          {item.image ? (
+                            <img src={item.image} alt="" className="h-20 object-contain" />
+                          ) : (
+                            <div className="text-gray-300 text-3xl">🖼️</div>
+                          )}
+                        </div>
+                        <div className="p-3 flex-grow">
+                          <div className="flex justify-between">
+                            <h4 className="font-medium">{item.name}</h4>
+                            <button 
+                              onClick={() => removeFromWishlist(item.id)}
+                              className="text-gray-400 hover:text-red-500"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                          {item.price && (
+                            <div className="text-sm text-gray-600 mt-1">
+                              {item.price} {t("ر.س", "SAR")}
+                            </div>
+                          )}
+                          {item.link && (
+                            <div className="mt-2">
+                              <a 
+                                href={item.link} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-sm text-purple-600 hover:underline"
+                              >
+                                {t("رابط المنتج", "Product Link")} ↗
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                <div className="mt-6 p-4 bg-purple-50 rounded-lg">
+                  <h3 className="font-medium text-purple-800 mb-2">
+                    {t("مشاركة قائمة أمنياتك", "Share Your Wishlist")}
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    {t("شارك قائمتك مع أصدقائك ليعرفوا ما ترغب به", 
+                      "Share your list with friends so they know what you'd love")}
+                  </p>
+                  <div className="flex gap-2">
+                    <button className="flex-1 py-2 bg-white text-gray-700 border rounded-md text-sm">
+                      {t("نسخ الرابط", "Copy Link")}
+                    </button>
+                    <button className="flex-1 py-2 bg-white text-gray-700 border rounded-md text-sm">
+                      {t("واتساب", "WhatsApp")}
+                    </button>
+                    <button className="flex-1
+      </div>
+    </div>
+  );
+}
+
+export default App;
